@@ -1,6 +1,7 @@
 package tabplay
 
 import java.nio.file.Path
+import java.util.*
 
 
 data class Train(
@@ -90,15 +91,25 @@ fun lineToTest(line: String): Test? {
     )
 }
 
+fun submissionToLine(submission: Submission): String {
+    val targetStr = "%.4f".format(Locale.ENGLISH, submission.target)
+    return "${submission.id},${targetStr}"
+}
+
 val workDir: Path = Path.of("/data/work/tabplay")
 val dataDir: Path = workDir.resolve("data")
 
 fun main() {
     val trains = readData("train.csv", ::lineToTrain)
     val m: Model = ModelMean(trains)
-    val subs = readData("train.csv", ::lineToTest).map(m::predict)
-    
-    subs.take(10).forEach(::println)
+    val outFile = dataDir.resolve("subm_01.csv").toFile()
+    outFile.printWriter().use { pw ->
+        pw.println("id,target")
+        readData("test.csv", ::lineToTest)
+            .map(m::predict)
+            .forEach { pw.println(submissionToLine(it)) }
+    }
+    println("Wrote submission to '${outFile.absolutePath}'")
 }
 
 fun <T> readData(fileName: String, f: (String) -> T?): List<T> {
